@@ -1,10 +1,9 @@
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import searchDevices from './api/miot-spec/searchDevices'
+import reactLogo from "./assets/react.svg";
+import viteLogo from "/vite.svg";
+import "./App.css";
+import searchDevices from "./api/miot-spec/searchDevices";
 
 function App() {
-
   async function debugSearchDevice() {
     const devices = await searchDevices("mmgg.feeder.fi1");
     console.log(devices);
@@ -22,9 +21,7 @@ function App() {
       </div>
       <h1>Vite + React</h1>
       <div className="card">
-        <button onClick={() => debugSearchDevice()}>
-          Test!
-        </button>
+        <button onClick={() => debugSearchDevice()}>Test!</button>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
@@ -33,7 +30,7 @@ function App() {
         Click on the Vite and React logos to learn more
       </p>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
