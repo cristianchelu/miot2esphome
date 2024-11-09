@@ -1,0 +1,14 @@
+:root {
+  --color-background: #242424;
+  --color-text: rgba(255, 255, 255, 0.87);
+  --color-bg-input: #1a1a1a;
+  --color-accent: #646cff;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-text: #213547;
+    --color-background: #ffffff;
+    --color-bg-input: #f9f9f9;
+  }
+}

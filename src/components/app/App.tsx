@@ -1,4 +1,5 @@
-import searchDevices from "./api/miot-spec/searchDevices";
+import searchDevices from "../../api/miot-spec/searchDevices";
+import Button from "../button/Button";
 
 import "./App.css";
 
@@ -11,7 +12,7 @@ function App() {
   return (
     <>
       <h1>MIoT ➠ ESPHome</h1>
-      <button onClick={() => debugSearchDevice()}>Test!</button>
+      <Button onClick={() => debugSearchDevice()}>Test!</Button>
     </>
   );
 }
