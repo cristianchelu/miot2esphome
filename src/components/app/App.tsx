@@ -1,9 +1,13 @@
 import { useState } from "react";
 import searchDevices, {
-  SearchDeviceResponse,
+  MiotDeviceSummary,
 } from "../../api/miot-spec/searchDevices";
+
 import Button from "../button/Button";
 import Input from "../input/Input";
+import DeviceSummaryCard from "../device-summary/DeviceSummaryCard";
+import DeviceSummaryList from "../device-summary/DeviceSummaryList";
+
 import SearchIcon from "../../icons/search.svg?react";
 import LoadingIcon from "../../icons/loading.svg?react";
 
@@ -14,8 +18,11 @@ const modelStringRegex =
 
 function App() {
   const [search, setSearch] = useState("");
-  const [devices, setDevices] = useState<SearchDeviceResponse[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const [devices, setDevices] = useState<MiotDeviceSummary[]>([]);
+  const [selectedDevice, setSelectedDevice] =
+    useState<MiotDeviceSummary | null>(null);
 
   async function debugSearchDevice(ev: React.FormEvent) {
     ev.preventDefault();
@@ -29,7 +36,7 @@ function App() {
     }
   }
 
-  const isSearchDisabled = !modelStringRegex.test(search) || loading;
+  const isSearchDisabled = /* !modelStringRegex.test(search) ||  */ loading;
 
   return (
     <>
@@ -41,12 +48,19 @@ function App() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="brand.type.model"
-            pattern={modelStringRegex.source}
+            // pattern={modelStringRegex.source}
           />
           <Button disabled={isSearchDisabled} className="icon" type="submit">
             {loading ? <LoadingIcon /> : <SearchIcon />}
           </Button>
         </form>
+        <DeviceSummaryList>
+          {devices.map((device) => (
+            <li key={device.model}>
+              <DeviceSummaryCard device={device} onClick={setSelectedDevice} />
+            </li>
+          ))}
+        </DeviceSummaryList>
       </aside>
       <main></main>
     </>

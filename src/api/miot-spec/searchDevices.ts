@@ -5,7 +5,7 @@ import { proxy } from "./utils";
  *
  * More properties are available in this object, but are not yet useful.
  */
-export interface SearchDeviceResponse {
+export interface MiotDeviceSummary {
   /** Device human-friendly name */
   name: string;
   /** Device model string (`brand.type.model`) */
@@ -29,8 +29,8 @@ export interface SearchDeviceResponse {
 
 export default async function searchDevices(
   name: string
-): Promise<SearchDeviceResponse[]> {
-  const response = await proxy(`https://home.miot-spec.com/s/${name}`);
+): Promise<MiotDeviceSummary[]> {
+  const response = await proxy(`https://home.miot-spec.com/s/${encodeURIComponent(name)}`);
   const html = await response.text();
 
   const dataPage = html.match(/data-page="([^"]+)"/);
@@ -38,7 +38,7 @@ export default async function searchDevices(
     throw new Error("Could not find data-page attribute");
   }
 
-  const page = dataPage[1].replace(/&quot;/g, '"');
+  const page = dataPage[1].replace(/&quot;/g, '"').replace(/&amp;/g, "&");
   const json = JSON.parse(page);
 
   if (!json.props || !json.props.list) {
