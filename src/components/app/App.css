@@ -9,8 +9,24 @@
   aside {
     display: flex;
     flex-direction: column;
-    gap: 1.2rem;
-    padding: 1.2rem 0.6rem;
+    gap: var(--padding);
+    padding: var(--padding) var(--padding-half);
+
+    .list-container {
+      position: relative;
+      margin: 0 calc(var(--padding-half) * -1);
+      flex: 1;
+
+      .device-summary-list {
+        padding: 2px var(--padding-half);
+        position: absolute;
+        inset: 0;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: var(--padding-quarter);
+      }
+    }
   }
 
   h1 {
@@ -18,18 +34,20 @@
     text-align: center;
   }
 
-  .searchbar {
+  #device-search {
     display: flex;
-    gap: 8px;
+    gap: var(--padding-quarter);
     justify-content: stretch;
     width: 100%;
 
     input {
       flex: 1;
+      min-width: 0;
     }
   }
 
-  .rotate {
-    animation: rotate 2s linear infinite;
+  .disclaimer {
+    font-size: 0.8em;
+    text-align: center;
   }
 }

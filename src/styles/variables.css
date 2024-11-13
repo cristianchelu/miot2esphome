@@ -1,3 +1,6 @@
 :root {
   --border-radius: 8px;
+  --padding: 1.2rem;
+  --padding-half: calc(var(--padding) / 2);
+  --padding-quarter: calc(var(--padding) / 4);
 }

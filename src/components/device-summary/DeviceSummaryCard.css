@@ -2,19 +2,19 @@
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  gap: 1em;
-  padding: 0.5em 1em;
+  gap: var(--padding-half);
   border-radius: var(--border-radius);
   cursor: pointer;
 
   text-align: left;
 
   img {
-    flex-grow: 0;
+    flex-shrink: 0;
     height: 5rem;
     width: 5rem;
     overflow: hidden;
     font-size: 0;
+    padding: var(--padding-half);
   }
 
   &:focus-within {
@@ -32,17 +32,18 @@
   }
 
   &.unsupported {
-    color: #656565;
     cursor: not-allowed;
+    opacity: 0.2;
 
-    .card-image {
-      opacity: 0.2;
+    @media (prefers-color-scheme: light) {
+      opacity: 0.4;
     }
   }
 
   .card-content {
     display: flex;
     flex-direction: column;
+    width: 100%;
   }
 
   .unsupported-message {
@@ -51,19 +52,11 @@
 
   .card-subtitle {
     display: flex;
-    gap: 0.5em;
+    gap: var(--padding-quarter);
     align-items: center;
   }
 
-  .hass-tag {
-    padding: 0.25em 0.5em;
-    border-radius: var(--border-radius);
-    background-color: #1f1f1f;
-    color: #fff;
-    font-size: 0.8em;
-  }
-
   &:not(.unsupported):hover {
-    background-color: #1f1f1f;
+    background-color: var(--color-bg-input);
   }
 }

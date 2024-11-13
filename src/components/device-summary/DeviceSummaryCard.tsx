@@ -26,16 +26,16 @@ function DeviceSummaryCard({ device, onClick }: DeviceSummaryCardProps) {
     >
       <img src={device.icon_real} alt={device.name} />
       <div className="card-content">
-        <a href={`#${device.model}`} className="card-title">
+        <a
+          aria-disabled={isUnsupported}
+          tabIndex={isUnsupported ? -1 : 0}
+          href={isUnsupported ? undefined : `#${device.model}`}
+          className="card-title"
+        >
           {device.name}
         </a>
         <div className="card-subtitle">
           <code>{device.model}</code>
-          {device.hass_tags.map((tag) => (
-            <span className="hass-tag" key={tag}>
-              {tag}
-            </span>
-          ))}
         </div>
       </div>
     </div>
