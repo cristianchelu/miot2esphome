@@ -1,7 +1,7 @@
 :root {
   --color-background: #242424;
   --color-text: rgba(255, 255, 255, 0.87);
-  --color-bg-input: #1a1a1a;
+  --color-bg-input: #1c1b1b;
   --color-border-input: #333333;
   --color-accent: #646cff;
   --color-error: #ff6464;
@@ -11,7 +11,7 @@
   :root {
     --color-text: #213547;
     --color-background: #ffffff;
-    --color-bg-input: #f0f0f0;
+    --color-bg-input: #f6f6f6;
     --color-border-input: #e5e5e5;
   }
 }

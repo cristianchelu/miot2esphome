@@ -1,6 +1,7 @@
 import cn from "classnames";
 
 import { MiotDeviceSummary } from "../../api/miot-spec/searchDevices";
+import isDeviceSupported from "../../lib/miot/isDeviceSupported";
 
 import "./DeviceSummaryCard.css";
 
@@ -10,7 +11,7 @@ interface DeviceSummaryCardProps {
 }
 
 function DeviceSummaryCard({ device, onClick }: DeviceSummaryCardProps) {
-  const isUnsupported = device.hass_tags.includes("miio2miot");
+  const isUnsupported = !isDeviceSupported(device);
 
   function _handleClick(event: React.MouseEvent) {
     event.preventDefault();
