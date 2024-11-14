@@ -157,8 +157,6 @@ export interface MiotDevice {
 }
 
 export default async function getSpec(urn: string): Promise<MiotDevice> {
-  const response = await proxy(
-    `https://miot-spec.org/miot-spec-v2/instances?urn=${urn}`
-  );
+  const response = await proxy(`https://miot-spec.org/miot-spec-v2/instance?type=${urn}`);
   return response.json();
 }

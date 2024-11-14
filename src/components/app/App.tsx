@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import searchDevices, {
   MiotDeviceSummary,
 } from "../../api/miot-spec/searchDevices";
@@ -11,6 +11,16 @@ import SearchIcon from "../../icons/search.svg?react";
 import LoadingIcon from "../../icons/loading.svg?react";
 
 import "./App.css";
+import Sidebar from "../sidebar/Sidebar";
+import YamlView from "../yaml-view/YamlView";
+import getSpec, { MiotDevice } from "../../api/miot-spec/getSpec";
+
+const AppTitle = () => <h1>MIoT ➠ ESPHome</h1>;
+const AppFooter = () => (
+  <>
+    data from <a href="https://home.miot-spec.com/">miot-spec.com</a>
+  </>
+);
 
 function App() {
   const [search, setSearch] = useState("");
@@ -19,6 +29,7 @@ function App() {
   const [devices, setDevices] = useState<MiotDeviceSummary[]>([]);
   const [selectedDevice, setSelectedDevice] =
     useState<MiotDeviceSummary | null>(null);
+  const [spec, setSpec] = useState<MiotDevice | null>(null);
 
   async function debugSearchDevice(ev: React.FormEvent) {
     ev.preventDefault();
@@ -32,40 +43,62 @@ function App() {
     }
   }
 
+  useEffect(() => {
+    if (!selectedDevice) return;
+
+    (async function () {
+      const response = await getSpec(
+        selectedDevice.specs[selectedDevice.specs.length - 1].type
+      );
+      setSpec(response);
+    })();
+  }, [selectedDevice]);
+
   const isSearchDisabled = /* !modelStringRegex.test(search) ||  */ loading;
+
+  const searchForm = (
+    <form id="device-search" onSubmit={debugSearchDevice}>
+      <Input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search device..."
+      />
+      <Button disabled={isSearchDisabled} className="icon" type="submit">
+        {loading ? <LoadingIcon /> : <SearchIcon />}
+      </Button>
+    </form>
+  );
+  const searchResults = devices.map((device) => (
+    <DeviceSummaryCard
+      key={device.model}
+      device={device}
+      onClick={setSelectedDevice}
+    />
+  ));
+  const deviceRow = selectedDevice ? (
+    <DeviceSummaryCard
+      device={selectedDevice}
+      onClick={() => {
+        setSelectedDevice(null);
+        setSpec(null);
+      }}
+    />
+  ) : null;
 
   return (
     <>
-      <aside>
-        <h1>MIoT ➠ ESPHome</h1>
-        <form id="device-search" onSubmit={debugSearchDevice}>
-          <Input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search device..."
-          />
-          <Button disabled={isSearchDisabled} className="icon" type="submit">
-            {loading ? <LoadingIcon /> : <SearchIcon />}
-          </Button>
-        </form>
-        <div className="list-container">
-          <div className="device-summary-list" tabIndex={-1}>
-            {devices.map((device) => (
-              <DeviceSummaryCard
-                key={device.model}
-                device={device}
-                onClick={setSelectedDevice}
-              />
-            ))}
-          </div>
-        </div>
-        <p className="disclaimer">
-          All data from{" "}
-          <a href={`https://home.miot-spec.com/s/${search}`}>miot-spec.com</a>
-        </p>
-      </aside>
-      <main></main>
+      <Sidebar>
+        <Sidebar.Header>
+          <AppTitle />
+          {selectedDevice ? deviceRow : searchForm}
+        </Sidebar.Header>
+        <Sidebar.Body>{selectedDevice ? null : searchResults}</Sidebar.Body>
+        <Sidebar.Footer>
+          <AppFooter />
+        </Sidebar.Footer>
+      </Sidebar>
+      <main>{spec && <YamlView yaml={JSON.stringify(spec, null, 2)} />}</main>
     </>
   );
 }

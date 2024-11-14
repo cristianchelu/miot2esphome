@@ -11,7 +11,7 @@
   :root {
     --color-text: #213547;
     --color-background: #ffffff;
-    --color-bg-input: #f9f9f9;
-    --color-border-input: #e0e0e0;
+    --color-bg-input: #f0f0f0;
+    --color-border-input: #e5e5e5;
   }
 }

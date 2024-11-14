@@ -10,7 +10,7 @@
   padding: 0.6rem 1.2rem;
 
   &.icon {
-    padding: 0;
+    padding: var(--padding-half);
     font-size: 1.25em;
     aspect-ratio: 1;
     display: flex;
