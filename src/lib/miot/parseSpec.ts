@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   MiotAction,
   MiotDevice,
@@ -10,7 +9,7 @@ import { MiotDeviceSummary } from "../../api/miot-spec/searchDevices";
 import CommentKeyGenerator from "../CommentKeyGenerator";
 import pipe from "../pipe";
 import idFromType from "./idFromType";
-import prettifyUnit from "./prettifyUnit";
+import { parseUnit } from "./units";
 import { stringify } from "yaml";
 
 const AUTHOR = "dhewg";
@@ -125,9 +124,12 @@ function parseProperty(
     component[comment.above] = `# event output for ${eventList}`;
   }
 
-  const unit = prettifyUnit(property.unit);
+  const [unit, deviceClass] = parseUnit(property.unit);
   if (unit) {
     component.unit_of_measurement = unit;
+  }
+  if (deviceClass) {
+    component.device_class = deviceClass;
   }
 
   return component;
