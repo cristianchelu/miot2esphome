@@ -5,6 +5,8 @@
   justify-content: stretch;
   min-width: 320px;
   height: 100vh;
+  padding: var(--padding);
+  gap: var(--padding);
 
   h1 {
     font-size: 2rem;
@@ -25,13 +27,17 @@
 
   .sidebar {
     width: 20em;
+
+    .footer {
+      display: flex;
+      flex-direction: column;
+      gap: var(--padding-half);
+    }
   }
 
   main {
     flex: 1;
-    margin: var(--padding);
     padding: var(--padding);
-    margin-left: var(--padding-half);
     border-radius: var(--border-radius);
     background-color: var(--color-bg-input);
     overflow: scroll;

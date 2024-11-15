@@ -2,7 +2,7 @@ aside.sidebar {
   display: flex;
   flex-direction: column;
   gap: var(--padding);
-  padding: var(--padding) var(--padding-half);
+  /* padding: var(--padding) var(--padding-half); */
 
   .header {
     display: flex;

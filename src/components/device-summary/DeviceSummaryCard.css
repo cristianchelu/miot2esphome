@@ -5,6 +5,7 @@
   gap: var(--padding-half);
   border-radius: var(--border-radius);
   cursor: pointer;
+  padding: var(--padding-half);
 
   text-align: left;
 
@@ -14,7 +15,6 @@
     width: 5rem;
     overflow: hidden;
     font-size: 0;
-    padding: var(--padding-half);
   }
 
   &:focus-within {

@@ -18,9 +18,9 @@ import parseSpec from "../../lib/miot/parseSpec";
 
 const AppTitle = () => <h1>MIoT ➠ ESPHome</h1>;
 const AppFooter = () => (
-  <>
+  <p>
     data from <a href="https://home.miot-spec.com/">miot-spec.com</a>
-  </>
+  </p>
 );
 
 function App() {
@@ -91,11 +91,11 @@ function App() {
     <>
       <Sidebar>
         <Sidebar.Header>
-          <AppTitle />
           {selectedDevice ? deviceRow : searchForm}
         </Sidebar.Header>
         <Sidebar.Body>{selectedDevice ? null : searchResults}</Sidebar.Body>
         <Sidebar.Footer>
+          <AppTitle />
           <AppFooter />
         </Sidebar.Footer>
       </Sidebar>
