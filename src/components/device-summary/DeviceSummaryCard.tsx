@@ -27,7 +27,7 @@ function DeviceSummaryCard({ device, onClick }: DeviceSummaryCardProps) {
       })}
       onClick={_handleClick}
     >
-      <img src={device.icon_real} alt={device.name} />
+      <img src={device.icon_real} alt={device.name} loading="lazy" />
       <div className="card-content">
         <a
           aria-disabled={isClickable}
