@@ -6,6 +6,8 @@ component, based on the MIoT specification of a device.
 
 All data is fetched by the browser from [miot-spec.com](https://home.miot-spec.com/)
 
+[Open in GitHub Pages](https://cristianchelu.github.io/miot2esphome/)
+
 # Caveats
 
 - The `esphome-miot` component only works for devices with two separate MCUs.
