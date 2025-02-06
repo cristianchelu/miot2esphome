@@ -15,6 +15,7 @@ import Sidebar from "../sidebar/Sidebar";
 import YamlView from "../yaml-view/YamlView";
 import getSpec, { MiotDevice } from "../../api/miot-spec/getSpec";
 import parseSpec from "../../lib/miot/parseSpec";
+import Instructions from "../instructions/Instructions";
 
 const AppTitle = () => <h1>MIoT ➠ ESPHome</h1>;
 const AppFooter = () => (
@@ -101,8 +102,10 @@ function App() {
         </Sidebar.Footer>
       </Sidebar>
       <main>
-        {spec && selectedDevice && (
+        {spec && selectedDevice ? (
           <YamlView yaml={parseSpec(selectedDevice, spec) as string} />
+        ) : (
+          <Instructions />
         )}
       </main>
     </>

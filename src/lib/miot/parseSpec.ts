@@ -6,14 +6,12 @@ import {
   MiotService,
 } from "../../api/miot-spec/getSpec";
 import { MiotDeviceSummary } from "../../api/miot-spec/searchDevices";
+import { AUTHOR, REPOSITORY } from "../../const";
 import CommentKeyGenerator from "../CommentKeyGenerator";
 import pipe from "../pipe";
 import idFromType from "./idFromType";
 import { parseUnit } from "./units";
 import { stringify } from "yaml";
-
-const AUTHOR = "dhewg";
-const REPOSITORY = "esphome-miot";
 
 function getActionLambda(siid: number, aiid: number, inputs: MiotProperty[]) {
   const joinStr = inputs.length > 1 ? ",\n    " : ", ";
