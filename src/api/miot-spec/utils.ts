@@ -5,5 +5,5 @@
  * a CORS `Access-Control-Allow-Origin` header.
  */
 export function proxy(url: string) {
-  return fetch("https://corsproxy.io/?" + encodeURIComponent(url));
+  return fetch("https://corsproxy.io/?url=" + encodeURIComponent(url));
 }
