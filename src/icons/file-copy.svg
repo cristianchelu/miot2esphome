@@ -1,0 +1,12 @@
+<!-- https://fonts.google.com/icons?icon.set=Material%20Symbols&selected=Material%20Symbols%20Outlined%3Afile_copy%3AFILL%400%3Bwght%40400%3BGRAD%400%3Bopsz%4024&icon.size=24&icon.color=%235f6368&icon.query=copy -->
+<svg 
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 -960 960 960"
+  height="1em"
+  width="1em"
+  fill="currentColor"
+>
+  <path 
+    d="M760-200H320q-33 0-56.5-23.5T240-280v-560q0-33 23.5-56.5T320-920h280l240 240v400q0 33-23.5 56.5T760-200ZM560-640v-200H320v560h440v-360H560ZM160-40q-33 0-56.5-23.5T80-120v-560h80v560h440v80H160Zm160-800v200-200 560-560Z"
+  />
+</svg>

@@ -1,21 +1,24 @@
 import React, { useEffect, useState } from "react";
+
 import searchDevices, {
   MiotDeviceSummary,
 } from "../../api/miot-spec/searchDevices";
+import getSpec from "../../api/miot-spec/getSpec";
+
+import parseSpec from "../../lib/miot/parseSpec";
 
 import Button from "../button/Button";
-import Input from "../input/Input";
+import CopyButton from "../copy-button/CopyButton";
 import DeviceSummaryCard from "../device-summary/DeviceSummaryCard";
+import Instructions from "../instructions/Instructions";
+import Input from "../input/Input";
+import Sidebar from "../sidebar/Sidebar";
+import YamlView from "../yaml-view/YamlView";
 
 import SearchIcon from "../../icons/search.svg?react";
 import LoadingIcon from "../../icons/loading.svg?react";
 
 import "./App.css";
-import Sidebar from "../sidebar/Sidebar";
-import YamlView from "../yaml-view/YamlView";
-import getSpec, { MiotDevice } from "../../api/miot-spec/getSpec";
-import parseSpec from "../../lib/miot/parseSpec";
-import Instructions from "../instructions/Instructions";
 
 const AppTitle = () => <h1>MIoT ➠ ESPHome</h1>;
 const AppFooter = () => (
@@ -31,7 +34,7 @@ function App() {
   const [devices, setDevices] = useState<MiotDeviceSummary[]>([]);
   const [selectedDevice, setSelectedDevice] =
     useState<MiotDeviceSummary | null>(null);
-  const [spec, setSpec] = useState<MiotDevice | null>(null);
+  const [spec, setSpec] = useState<string | null>(null);
 
   async function debugSearchDevice(ev: React.FormEvent) {
     ev.preventDefault();
@@ -52,7 +55,7 @@ function App() {
       const response = await getSpec(
         selectedDevice.specs[selectedDevice.specs.length - 1].type
       );
-      setSpec(response);
+      setSpec(parseSpec(selectedDevice, response));
     })();
   }, [selectedDevice]);
 
@@ -71,6 +74,7 @@ function App() {
       </Button>
     </form>
   );
+
   const searchResults = devices.map((device) => (
     <DeviceSummaryCard
       key={device.model}
@@ -79,19 +83,27 @@ function App() {
     />
   ));
 
-  const deviceRow = selectedDevice ? (
-    <Button onClick={() => setSelectedDevice(null)}>Back</Button>
-  ) : null;
+  const handleBackClick = () => {
+    setSelectedDevice(null);
+    setSpec(null);
+  };
 
   return (
     <>
       <Sidebar>
         <Sidebar.Header>
-          {selectedDevice ? deviceRow : searchForm}
+          {selectedDevice ? (
+            <Button onClick={handleBackClick}>Back</Button>
+          ) : (
+            searchForm
+          )}
         </Sidebar.Header>
         <Sidebar.Body>
           {selectedDevice ? (
-            <DeviceSummaryCard device={selectedDevice} />
+            <>
+              <DeviceSummaryCard device={selectedDevice} />
+              {spec && <CopyButton spec={spec} />}
+            </>
           ) : (
             searchResults
           )}
@@ -101,13 +113,7 @@ function App() {
           <AppFooter />
         </Sidebar.Footer>
       </Sidebar>
-      <main>
-        {spec && selectedDevice ? (
-          <YamlView yaml={parseSpec(selectedDevice, spec) as string} />
-        ) : (
-          <Instructions />
-        )}
-      </main>
+      <main>{spec ? <YamlView yaml={spec} /> : <Instructions />}</main>
     </>
   );
 }

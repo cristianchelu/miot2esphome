@@ -6,12 +6,13 @@ import "./Button.css";
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   className?: string;
+  variant?: "primary" | "ghost";
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ children, className, ...props }, ref) => {
+  ({ children, className, variant = "primary", ...props }, ref) => {
     return (
-      <button className={cn("btn", className)} ref={ref} {...props}>
+      <button className={cn("btn", className, variant)} ref={ref} {...props}>
         {children}
       </button>
     );

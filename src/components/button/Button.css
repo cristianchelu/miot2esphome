@@ -1,13 +1,35 @@
 .btn {
   border-radius: var(--border-radius);
-  border: 1px solid var(--color-border-input);
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: var(--color-bg-input);
   cursor: pointer;
-  transition: border-color 0.25s;
   padding: 0.6rem 1.2rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--padding-half);
+
+  &.primary {
+    border: 1px solid var(--color-border-input);
+    background-color: var(--color-bg-input);
+    transition: border-color 0.25s;
+
+    &:not(:disabled):hover {
+      border-color: var(--color-accent);
+    }
+  }
+
+  &.ghost {
+    border: none;
+    background-color: transparent;
+    transition: background-color 0.25s;
+
+    &:not(:disabled):hover {
+      background-color: var(--color-bg-input);
+    }
+  }
 
   &.icon {
     padding: var(--padding-half);
@@ -16,10 +38,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  &:not(:disabled):hover {
-    border-color: var(--color-accent);
   }
 
   &:focus-visible {

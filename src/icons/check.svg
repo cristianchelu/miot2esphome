@@ -1,0 +1,12 @@
+<!-- https://fonts.google.com/icons?icon.set=Material%20Symbols&selected=Material%20Symbols%20Outlined%3Acheck%3AFILL%400%3Bwght%40400%3BGRAD%400%3Bopsz%4024&icon.size=24&icon.color=%235f6368&icon.query=check -->
+<svg 
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 -960 960 960"
+  height="1em"
+  width="1em"
+  fill="currentColor"
+>
+  <path 
+    d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"
+  />
+</svg>

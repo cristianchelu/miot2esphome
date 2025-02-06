@@ -273,7 +273,10 @@ function cleanObject(obj: object) {
   );
 }
 
-export default function parseSpec(device: MiotDeviceSummary, spec: MiotDevice) {
+export default function parseSpec(
+  device: MiotDeviceSummary,
+  spec: MiotDevice
+): string {
   const commentGenerator = new CommentKeyGenerator();
   const comment = commentGenerator as unknown as string & {
     above: string;
@@ -355,5 +358,5 @@ export default function parseSpec(device: MiotDeviceSummary, spec: MiotDevice) {
     (str: string) => stringify(str, { lineWidth: 0 }),
     CommentKeyGenerator.render,
     unquoteLamba
-  )(output);
+  )(output) as string;
 }
