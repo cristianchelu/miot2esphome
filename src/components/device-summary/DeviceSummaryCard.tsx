@@ -12,25 +12,27 @@ interface DeviceSummaryCardProps {
 
 function DeviceSummaryCard({ device, onClick }: DeviceSummaryCardProps) {
   const isUnsupported = !isDeviceSupported(device);
+  const isClickable = !isUnsupported && !!onClick;
 
   function _handleClick(event: React.MouseEvent) {
     event.preventDefault();
-    onClick?.(device);
+    if (isClickable) onClick(device);
   }
 
   return (
     <div
       className={cn("device-summary", {
         unsupported: isUnsupported,
+        clickable: isClickable,
       })}
       onClick={_handleClick}
     >
       <img src={device.icon_real} alt={device.name} />
       <div className="card-content">
         <a
-          aria-disabled={isUnsupported}
-          tabIndex={isUnsupported ? -1 : 0}
-          href={isUnsupported ? undefined : `#${device.model}`}
+          aria-disabled={isClickable}
+          tabIndex={isClickable ? 0 : -1}
+          href={isClickable ? `#${device.model}` : undefined}
           className="card-title"
         >
           {device.name}

@@ -77,14 +77,9 @@ function App() {
       onClick={setSelectedDevice}
     />
   ));
+
   const deviceRow = selectedDevice ? (
-    <DeviceSummaryCard
-      device={selectedDevice}
-      onClick={() => {
-        setSelectedDevice(null);
-        setSpec(null);
-      }}
-    />
+    <Button onClick={() => setSelectedDevice(null)}>Back</Button>
   ) : null;
 
   return (
@@ -93,7 +88,13 @@ function App() {
         <Sidebar.Header>
           {selectedDevice ? deviceRow : searchForm}
         </Sidebar.Header>
-        <Sidebar.Body>{selectedDevice ? null : searchResults}</Sidebar.Body>
+        <Sidebar.Body>
+          {selectedDevice ? (
+            <DeviceSummaryCard device={selectedDevice} />
+          ) : (
+            searchResults
+          )}
+        </Sidebar.Body>
         <Sidebar.Footer>
           <AppTitle />
           <AppFooter />

@@ -4,7 +4,6 @@
   align-items: center;
   gap: var(--padding-half);
   border-radius: var(--border-radius);
-  cursor: pointer;
   padding: var(--padding-half);
 
   text-align: left;
@@ -15,11 +14,6 @@
     width: 5rem;
     overflow: hidden;
     font-size: 0;
-  }
-
-  &:focus-within {
-    outline: 1px solid var(--color-accent);
-    outline-offset: 1px;
   }
 
   a {
@@ -46,17 +40,22 @@
     width: 100%;
   }
 
-  .unsupported-message {
-    font-size: 0.8em;
-  }
-
   .card-subtitle {
     display: flex;
     gap: var(--padding-quarter);
     align-items: center;
   }
 
-  &:not(.unsupported):hover {
-    background-color: var(--color-bg-input);
+  &.clickable:not(.unsupported) {
+    cursor: pointer;
+
+    &:hover {
+      background-color: var(--color-bg-input);
+    }
+
+    &:focus-within {
+      outline: 1px solid var(--color-accent);
+      outline-offset: 1px;
+    }
   }
 }
