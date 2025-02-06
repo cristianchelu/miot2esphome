@@ -22,9 +22,15 @@ import "./App.css";
 
 const AppTitle = () => <h1>MIoT ➠ ESPHome</h1>;
 const AppFooter = () => (
-  <p>
-    data from <a href="https://home.miot-spec.com/">miot-spec.com</a>
-  </p>
+  <>
+    <p>
+      view source on{" "}
+      <a href="https://github.com/cristianchelu/miot2esphome">GitHub</a>
+    </p>
+    <p>
+      data from <a href="https://home.miot-spec.com/">miot-spec.com</a>
+    </p>
+  </>
 );
 
 function App() {
