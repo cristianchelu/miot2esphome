@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   MiotAction,
   MiotDevice,
@@ -54,7 +55,7 @@ function parseProperty(
     event.arguments.includes(property.iid)
   );
 
-  const component: Record<string, unknown> = {};
+  const component: Record<string, any> = {};
 
   component.platform = "miot";
   component.id = idFromType(property.type);
@@ -297,7 +298,7 @@ export default function parseSpec(device: MiotDeviceSummary, spec: MiotDevice) {
 
   const componentsByDomain = Object.groupBy(
     properties,
-    (property) => property["$domain"]
+    (property) => property?.["$domain"]
   );
 
   const output: Record<string, unknown> = {
@@ -332,11 +333,11 @@ export default function parseSpec(device: MiotDeviceSummary, spec: MiotDevice) {
   };
 
   for (const [domain, components] of Object.entries(componentsByDomain)) {
-    if (!components.length) {
+    if (!components?.length) {
       continue;
     }
 
-    const cleaned = components.map(cleanObject);
+    const cleaned = components.filter((o) => o !== null).map(cleanObject);
 
     if (Array.isArray(output[domain])) {
       output[domain].push(...cleaned);
