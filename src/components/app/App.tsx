@@ -4,13 +4,15 @@ import searchDevices, {
   MiotDeviceSummary,
 } from "../../api/miot-spec/searchDevices";
 import getDeviceVersions from "../../api/miot-spec/getDeviceVersions";
-import getSpec from "../../api/miot-spec/getSpec";
+import getSpec, { MiotDevice } from "../../api/miot-spec/getSpec";
 
 import parseSpec from "../../lib/miot/parseSpec";
+import { EspModule } from "../../lib/esp/modules";
 
 import Button from "../button/Button";
 import CopyButton from "../copy-button/CopyButton";
 import DeviceSummaryCard from "../device-summary/DeviceSummaryCard";
+import EspModulePicker from "../esp-module-picker/EspModulePicker";
 import Instructions from "../instructions/Instructions";
 import Input from "../input/Input";
 import Sidebar from "../sidebar/Sidebar";
@@ -41,7 +43,13 @@ function App() {
   const [devices, setDevices] = useState<MiotDeviceSummary[]>([]);
   const [selectedDevice, setSelectedDevice] =
     useState<MiotDeviceSummary | null>(null);
+  const [miotDevice, setMiotDevice] = useState<MiotDevice | null>(null);
   const [spec, setSpec] = useState<string | null>(null);
+
+  const [espModule, setEspModule] = useState<EspModule | null>(null);
+  const [rxPin, setRxPin] = useState<number | null>(null);
+  const [txPin, setTxPin] = useState<number | null>(null);
+  const [browsingModules, setBrowsingModules] = useState(false);
 
   async function debugSearchDevice(ev: React.FormEvent) {
     ev.preventDefault();
@@ -56,34 +64,35 @@ function App() {
   }
 
   useEffect(() => {
-    if (!selectedDevice) return;
+    if (!selectedDevice) {
+      setMiotDevice(null);
+      return;
+    }
 
     let cancelled = false;
+    const device = selectedDevice;
 
     (async function () {
-      setSpec(null);
+      setMiotDevice(null);
       try {
         const specs =
-          selectedDevice.specs.length > 0
-            ? selectedDevice.specs
-            : await getDeviceVersions(
-                selectedDevice.model,
-                selectedDevice.specHref
-              );
+          device.specs.length > 0
+            ? device.specs
+            : await getDeviceVersions(device.model, device.specHref);
         if (cancelled) return;
 
         const urn = specs[specs.length - 1]?.type;
         if (!urn) {
-          throw new Error(`No MiOT URN found for ${selectedDevice.model}`);
+          throw new Error(`No MiOT URN found for ${device.model}`);
         }
 
         const response = await getSpec(urn);
         if (cancelled) return;
-        setSpec(parseSpec({ ...selectedDevice, specs }, response));
+        setMiotDevice(response);
       } catch (error) {
         if (cancelled) return;
         console.error(error);
-        setSpec(null);
+        setMiotDevice(null);
       }
     })();
 
@@ -92,7 +101,46 @@ function App() {
     };
   }, [selectedDevice]);
 
+  useEffect(() => {
+    if (!selectedDevice || !miotDevice) {
+      setSpec(null);
+      return;
+    }
+
+    setSpec(
+      parseSpec(selectedDevice, miotDevice, {
+        module: espModule,
+        rxPin,
+        txPin,
+      })
+    );
+  }, [selectedDevice, miotDevice, espModule, rxPin, txPin]);
+
   const isSearchDisabled = /* !modelStringRegex.test(search) ||  */ loading;
+
+  function resetEspConfig() {
+    setEspModule(null);
+    setRxPin(null);
+    setTxPin(null);
+    setBrowsingModules(false);
+  }
+
+  function handleDeviceSelect(device: MiotDeviceSummary) {
+    resetEspConfig();
+    setSelectedDevice(device);
+  }
+
+  function handlePinsChange(rx: number | null, tx: number | null) {
+    setRxPin(rx);
+    setTxPin(tx);
+  }
+
+  const handleBackClick = () => {
+    setSelectedDevice(null);
+    setMiotDevice(null);
+    setSpec(null);
+    resetEspConfig();
+  };
 
   const searchForm = (
     <form id="device-search" onSubmit={debugSearchDevice}>
@@ -112,14 +160,9 @@ function App() {
     <DeviceSummaryCard
       key={device.model}
       device={device}
-      onClick={setSelectedDevice}
+      onClick={handleDeviceSelect}
     />
   ));
-
-  const handleBackClick = () => {
-    setSelectedDevice(null);
-    setSpec(null);
-  };
 
   return (
     <>
@@ -133,18 +176,35 @@ function App() {
         </Sidebar.Header>
         <Sidebar.Body>
           {selectedDevice ? (
-            <>
-              <DeviceSummaryCard device={selectedDevice} />
-              {spec && <CopyButton spec={spec} />}
-            </>
+            <div
+              className={
+                browsingModules ? "device-config browsing" : "device-config"
+              }
+            >
+              {!browsingModules && (
+                <DeviceSummaryCard device={selectedDevice} />
+              )}
+              <EspModulePicker
+                module={espModule}
+                rxPin={rxPin}
+                txPin={txPin}
+                browsing={browsingModules}
+                onBrowsingChange={setBrowsingModules}
+                onModuleChange={setEspModule}
+                onPinsChange={handlePinsChange}
+              />
+              {!browsingModules && spec && <CopyButton spec={spec} />}
+            </div>
           ) : (
             searchResults
           )}
         </Sidebar.Body>
-        <Sidebar.Footer>
-          <AppTitle />
-          <AppFooter />
-        </Sidebar.Footer>
+        {browsingModules ? null : (
+          <Sidebar.Footer>
+            <AppTitle />
+            <AppFooter />
+          </Sidebar.Footer>
+        )}
       </Sidebar>
       <main>{spec ? <YamlView yaml={spec} /> : <Instructions />}</main>
     </>

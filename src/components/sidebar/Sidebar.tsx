@@ -27,7 +27,11 @@ const Footer = ({ children }: FooterProps) => {
   return <div className="footer">{children}</div>;
 };
 
-type SidebarChild = ReactElement<typeof Footer | typeof Header | typeof Body>;
+type SidebarChild =
+  | ReactElement<typeof Footer | typeof Header | typeof Body>
+  | null
+  | false
+  | undefined;
 
 interface SidebarProps {
   children?: SidebarChild | SidebarChild[];

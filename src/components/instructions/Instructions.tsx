@@ -19,6 +19,10 @@ const Instructions = () => {
         To get started, search for a device using the search bar on the left;
       </p>
       <p>Click on a device to view the boilerplate config;</p>
+      <p>
+        Pick the ESP module that matches what you see on the board, and adjust
+        the UART pins if needed;
+      </p>
       <p>Use it as a starting point for your reverse engineering process.</p>
       <h1>Caveats</h1>
       <p>

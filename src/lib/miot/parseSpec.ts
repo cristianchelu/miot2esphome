@@ -9,10 +9,17 @@ import {
 import { MiotDeviceSummary } from "../../api/miot-spec/searchDevices";
 import { AUTHOR, REPOSITORY } from "../../const";
 import CommentKeyGenerator from "../CommentKeyGenerator";
+import { EspModule } from "../esp/modules";
 import pipe from "../pipe";
 import idFromType from "./idFromType";
 import { parseUnit } from "./units";
 import { stringify } from "yaml";
+
+export type ParseSpecOptions = {
+  module?: EspModule | null;
+  rxPin?: number | null;
+  txPin?: number | null;
+};
 
 function getActionLambda(siid: number, aiid: number, inputs: MiotProperty[]) {
   const joinStr = inputs.length > 1 ? ",\n    " : ", ";
@@ -224,6 +231,38 @@ function getESPHomeSection(device: MiotDeviceSummary) {
   };
 }
 
+function getPlatformSection(module: EspModule) {
+  const section: Record<string, unknown> = {
+    board: module.board,
+  };
+
+  if (module.framework) {
+    section.framework = {
+      type: module.framework,
+    };
+  }
+
+  return section;
+}
+
+function getLoggerSection(
+  module: EspModule,
+  comment: string & { above: string }
+) {
+  if (module.platform === "esp8266") {
+    return {
+      level: "DEBUG",
+      [comment]:
+        "# Important: Disable UART1 logging to avoid hardware errors on main UART0",
+      baud_rate: 0,
+    };
+  }
+
+  return {
+    level: "DEBUG",
+  };
+}
+
 function getApiSection(scripts: any[]) {
   const debugAction = {
     action: "mcu_command",
@@ -275,12 +314,17 @@ function cleanObject(obj: object) {
 
 export default function parseSpec(
   device: MiotDeviceSummary,
-  spec: MiotDevice
+  spec: MiotDevice,
+  options: ParseSpecOptions = {}
 ): string {
   const commentGenerator = new CommentKeyGenerator();
   const comment = commentGenerator as unknown as string & {
     above: string;
   };
+
+  const espModule = options.module ?? null;
+  const rxPin = options.rxPin ?? null;
+  const txPin = options.txPin ?? null;
 
   const properties = spec.services
     .map((service) => {
@@ -304,6 +348,21 @@ export default function parseSpec(
     (property) => property?.["$domain"]
   );
 
+  const uartSection =
+    rxPin != null && txPin != null
+      ? {
+          baud_rate: 115200,
+          rx_pin: `GPIO${rxPin}`,
+          tx_pin: `GPIO${txPin}`,
+        }
+      : {
+          baud_rate: 115200,
+          rx_pin: "XX",
+          [comment.above]: "# TODO: Replace with actual pins",
+          tx_pin: "XX",
+          [comment.above]: "# TODO: Replace with actual pins",
+        };
+
   const output: Record<string, unknown> = {
     [comment]: `# https://home.miot-spec.com/spec/${device.model}`,
     [comment]: `# https://miot-spec.org/miot-spec-v2/instance?type=${spec.type}`,
@@ -314,26 +373,26 @@ export default function parseSpec(
     [comment]: "",
     esphome: getESPHomeSection(device),
     [comment]: "",
-    [comment]: "# TODO: include esp32: or esp8266: section based on chip",
-    [comment]: "",
-    logger: {
-      level: "DEBUG",
-    },
-    [comment]: "",
-    uart: {
-      baud_rate: 115200,
-      rx_pin: "XX",
-      [comment.above]: "# TODO: Replace with actual pins",
-      tx_pin: "XX",
-      [comment.above]: "# TODO: Replace with actual pins",
-    },
-    [comment]: "",
-    miot: {
-      id: "miot_main",
-    },
-    [comment]: "",
-    api: getApiSection(componentsByDomain["script"] ?? []),
   };
+
+  if (espModule) {
+    output[espModule.platform] = getPlatformSection(espModule);
+    output[comment] = "";
+    output.logger = getLoggerSection(espModule, comment);
+  } else {
+    output[comment] = "# TODO: include esp32: or esp8266: section based on chip";
+    output[comment] = "";
+    output.logger = { level: "DEBUG" };
+  }
+
+  output[comment] = "";
+  output.uart = uartSection;
+  output[comment] = "";
+  output.miot = {
+    id: "miot_main",
+  };
+  output[comment] = "";
+  output.api = getApiSection(componentsByDomain["script"] ?? []);
 
   for (const [domain, components] of Object.entries(componentsByDomain)) {
     if (!components?.length) {
