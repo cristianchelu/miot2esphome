@@ -1,4 +1,4 @@
-import { proxy } from "./utils";
+import { parseInertiaPage, proxy } from "./utils";
 
 /**
  * Summary information about a device not available in the spec itself.
@@ -12,38 +12,61 @@ export interface MiotDeviceSummary {
   model: string;
   /** Device thumbnail URL */
   icon_real: string;
-  /** MiOT specification revisions */
+  /** Protocol label from miot-spec.com (e.g. `Wi‑Fi`, `MiIO`) */
+  protocolLabel: string;
+  /** Relative path to the product spec page, when available */
+  specHref?: string;
+  /** MiOT specification revisions (populated on selection) */
   specs: Array<{
     /** Revision version */
     version: number;
     /** Revision URN */
     type: string;
   }>;
-  /** Compatibility with the `hass-xiaomi-miot` HA integration
-   *
-   * https://github.com/al-one/hass-xiaomi-miot
-   *
-   * `miio2miot`-tagged devices are **not** compatible with `esphome-miot` */
-  hass_tags: Array<"miio2miot" | "miot-local" | string>;
+}
+
+interface SearchResultItem {
+  name: string;
+  model: string;
+  icon?: string;
+  protocolLabel?: string;
+  specHref?: string;
+  attrs?: {
+    icon_real?: string;
+  };
+}
+
+interface SearchPageProps {
+  results?: {
+    data?: SearchResultItem[];
+  };
+}
+
+function mapSearchResult(item: SearchResultItem): MiotDeviceSummary {
+  return {
+    name: item.name,
+    model: item.model,
+    icon_real: item.icon || item.attrs?.icon_real || "",
+    protocolLabel: item.protocolLabel || "",
+    specHref: item.specHref,
+    specs: [],
+  };
 }
 
 export default async function searchDevices(
   name: string
 ): Promise<MiotDeviceSummary[]> {
-  const response = await proxy(`https://home.miot-spec.com/s/${encodeURIComponent(name)}`);
+  const response = await proxy(
+    `https://home.miot-spec.com/s/${encodeURIComponent(name)}`
+  );
   const html = await response.text();
+  const json = parseInertiaPage(html);
+  const props = json.props as SearchPageProps | undefined;
+  const list = props?.results?.data;
 
-  const dataPage = html.match(/data-page="([^"]+)"/);
-  if (!dataPage) {
-    throw new Error("Could not find data-page attribute");
-  }
-
-  const page = dataPage[1].replace(/&quot;/g, '"').replace(/&amp;/g, "&");
-  const json = JSON.parse(page);
-
-  if (!json.props || !json.props.list) {
+  if (!list) {
     throw new Error("Could not find list in response");
   }
 
-  return json.props.list;
+  return list.map(mapSearchResult);
 }

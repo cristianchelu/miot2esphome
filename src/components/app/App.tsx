@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import searchDevices, {
   MiotDeviceSummary,
 } from "../../api/miot-spec/searchDevices";
+import getDeviceVersions from "../../api/miot-spec/getDeviceVersions";
 import getSpec from "../../api/miot-spec/getSpec";
 
 import parseSpec from "../../lib/miot/parseSpec";
@@ -57,12 +58,38 @@ function App() {
   useEffect(() => {
     if (!selectedDevice) return;
 
+    let cancelled = false;
+
     (async function () {
-      const response = await getSpec(
-        selectedDevice.specs[selectedDevice.specs.length - 1].type
-      );
-      setSpec(parseSpec(selectedDevice, response));
+      setSpec(null);
+      try {
+        const specs =
+          selectedDevice.specs.length > 0
+            ? selectedDevice.specs
+            : await getDeviceVersions(
+                selectedDevice.model,
+                selectedDevice.specHref
+              );
+        if (cancelled) return;
+
+        const urn = specs[specs.length - 1]?.type;
+        if (!urn) {
+          throw new Error(`No MiOT URN found for ${selectedDevice.model}`);
+        }
+
+        const response = await getSpec(urn);
+        if (cancelled) return;
+        setSpec(parseSpec({ ...selectedDevice, specs }, response));
+      } catch (error) {
+        if (cancelled) return;
+        console.error(error);
+        setSpec(null);
+      }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedDevice]);
 
   const isSearchDisabled = /* !modelStringRegex.test(search) ||  */ loading;
