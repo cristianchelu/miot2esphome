@@ -1,33 +1,10 @@
 /**
- * Fetch the given URL through a CORS proxy.
- *
- * This is necessary because the `miot-spec.org` API does not return
- * a CORS `Access-Control-Allow-Origin` header.
+ * Fetch JSON from a CORS-enabled URL, throwing on non-2xx responses.
  */
-export function proxy(url: string) {
-  return fetch("https://corsproxy.io/?url=" + encodeURIComponent(url));
-}
-
-/**
- * Parse the Inertia.js page JSON embedded in home.miot-spec.com HTML.
- *
- * The site ships props as:
- *   <script data-page="app" type="application/json">{...}</script>
- */
-export function parseInertiaPage(html: string): Record<string, unknown> {
-  const match = html.match(
-    /<script[^>]*data-page="app"[^>]*type="application\/json"[^>]*>([\s\S]*?)<\/script>/i
-  ) ?? html.match(
-    /<script[^>]*type="application\/json"[^>]*data-page="app"[^>]*>([\s\S]*?)<\/script>/i
-  );
-
-  if (!match?.[1]) {
-    throw new Error("Could not find Inertia data-page JSON in response");
+export async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Request failed (${response.status}): ${url}`);
   }
-
-  try {
-    return JSON.parse(match[1]);
-  } catch {
-    throw new Error("Could not parse Inertia data-page JSON");
-  }
+  return response.json() as Promise<T>;
 }

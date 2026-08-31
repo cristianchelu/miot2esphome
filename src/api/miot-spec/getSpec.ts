@@ -1,4 +1,4 @@
-import { proxy } from "./utils";
+import { fetchJson } from "./utils";
 
 /**
  * Access permissions for a property.
@@ -157,6 +157,7 @@ export interface MiotDevice {
 }
 
 export default async function getSpec(urn: string): Promise<MiotDevice> {
-  const response = await proxy(`https://miot-spec.org/miot-spec-v2/instance?type=${urn}`);
-  return response.json();
+  return fetchJson<MiotDevice>(
+    `https://miot-spec.org/miot-spec-v2/instance?type=${encodeURIComponent(urn)}`
+  );
 }

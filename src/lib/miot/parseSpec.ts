@@ -222,8 +222,8 @@ function parseAction(
 function getESPHomeSection(device: MiotDeviceSummary) {
   return {
     name: "",
-    friendly_name: device.name,
-    comment: `${device.name} (${device.model})`,
+    friendly_name: device.model,
+    comment: device.model,
     project: {
       name: `${AUTHOR}.${REPOSITORY}`,
       version: device.model,
@@ -364,7 +364,6 @@ export default function parseSpec(
         };
 
   const output: Record<string, unknown> = {
-    [comment]: `# https://home.miot-spec.com/spec/${device.model}`,
     [comment]: `# https://miot-spec.org/miot-spec-v2/instance?type=${spec.type}`,
     [comment]: "",
     external_components: {
@@ -380,7 +379,8 @@ export default function parseSpec(
     output[comment] = "";
     output.logger = getLoggerSection(espModule, comment);
   } else {
-    output[comment] = "# TODO: include esp32: or esp8266: section based on chip";
+    output[comment] =
+      "# TODO: include esp32: or esp8266: section based on chip";
     output[comment] = "";
     output.logger = { level: "DEBUG" };
   }

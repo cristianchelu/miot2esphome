@@ -1,7 +1,7 @@
+import { MouseEvent } from "react";
 import cn from "classnames";
 
 import { MiotDeviceSummary } from "../../api/miot-spec/searchDevices";
-import isDeviceSupported from "../../lib/miot/isDeviceSupported";
 
 import "./DeviceSummaryCard.css";
 
@@ -11,36 +11,26 @@ interface DeviceSummaryCardProps {
 }
 
 function DeviceSummaryCard({ device, onClick }: DeviceSummaryCardProps) {
-  const isUnsupported = !isDeviceSupported(device);
-  const isClickable = !isUnsupported && !!onClick;
+  const isClickable = !!onClick;
 
-  function _handleClick(event: React.MouseEvent) {
+  function _handleClick(event: MouseEvent) {
     event.preventDefault();
     if (isClickable) onClick(device);
   }
 
   return (
     <div
-      className={cn("device-summary", {
-        unsupported: isUnsupported,
-        clickable: isClickable,
-      })}
+      className={cn("device-summary", { clickable: isClickable })}
       onClick={_handleClick}
     >
-      <img src={device.icon_real} alt={device.name} loading="lazy" />
-      <div className="card-content">
-        <a
-          aria-disabled={isClickable}
-          tabIndex={isClickable ? 0 : -1}
-          href={isClickable ? `#${device.model}` : undefined}
-          className="card-title"
-        >
-          {device.name}
-        </a>
-        <div className="card-subtitle">
-          <code>{device.model}</code>
-        </div>
-      </div>
+      <a
+        aria-disabled={!isClickable}
+        tabIndex={isClickable ? 0 : -1}
+        href={isClickable ? `#${device.model}` : undefined}
+        className="card-title"
+      >
+        <code>{device.model}</code>
+      </a>
     </div>
   );
 }

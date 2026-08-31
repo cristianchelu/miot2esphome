@@ -16,9 +16,10 @@ const Instructions = () => {
       </p>
       <h1>How to use</h1>
       <p>
-        To get started, search for a device using the search bar on the left;
+        To get started, search for a model string (for example
+        <code>zhimi.airpurifier.ma4</code>) using the search bar on the left;
       </p>
-      <p>Click on a device to view the boilerplate config;</p>
+      <p>Click a result to view the boilerplate config;</p>
       <p>
         Pick the ESP module that matches what you see on the board, and adjust
         the UART pins if needed;

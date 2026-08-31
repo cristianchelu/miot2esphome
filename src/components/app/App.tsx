@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import searchDevices, {
   MiotDeviceSummary,
 } from "../../api/miot-spec/searchDevices";
+import { loadGroupedInstances } from "../../api/miot-spec/instances";
 import getDeviceVersions from "../../api/miot-spec/getDeviceVersions";
 import getSpec, { MiotDevice } from "../../api/miot-spec/getSpec";
 
@@ -31,7 +32,7 @@ const AppFooter = () => (
       <a href="https://github.com/cristianchelu/miot2esphome">GitHub</a>
     </p>
     <p>
-      data from <a href="https://home.miot-spec.com/">miot-spec.com</a>
+      data from <a href="https://miot-spec.org/">miot-spec.org</a>
     </p>
   </>
 );
@@ -41,6 +42,7 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   const [devices, setDevices] = useState<MiotDeviceSummary[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
   const [selectedDevice, setSelectedDevice] =
     useState<MiotDeviceSummary | null>(null);
   const [miotDevice, setMiotDevice] = useState<MiotDevice | null>(null);
@@ -51,13 +53,24 @@ function App() {
   const [txPin, setTxPin] = useState<number | null>(null);
   const [browsingModules, setBrowsingModules] = useState(false);
 
+  useEffect(() => {
+    loadGroupedInstances().catch((error) => {
+      console.error(error);
+    });
+  }, []);
+
   async function debugSearchDevice(ev: React.FormEvent) {
     ev.preventDefault();
     setLoading(true);
     try {
       const response = await searchDevices(search);
       setDevices(response);
+      setHasSearched(true);
       console.log(response);
+    } catch (error) {
+      console.error(error);
+      setDevices([]);
+      setHasSearched(true);
     } finally {
       setLoading(false);
     }
@@ -78,7 +91,7 @@ function App() {
         const specs =
           device.specs.length > 0
             ? device.specs
-            : await getDeviceVersions(device.model, device.specHref);
+            : await getDeviceVersions(device.model);
         if (cancelled) return;
 
         const urn = specs[specs.length - 1]?.type;
@@ -148,7 +161,7 @@ function App() {
         type="text"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search device..."
+        placeholder="zhimi.airpurifier.ma4"
       />
       <Button disabled={isSearchDisabled} className="icon" type="submit">
         {loading ? <LoadingIcon /> : <SearchIcon />}
@@ -195,9 +208,11 @@ function App() {
               />
               {!browsingModules && spec && <CopyButton spec={spec} />}
             </div>
-          ) : (
+          ) : searchResults.length > 0 ? (
             searchResults
-          )}
+          ) : hasSearched && !loading ? (
+            <p>No matching models.</p>
+          ) : null}
         </Sidebar.Body>
         {browsingModules ? null : (
           <Sidebar.Footer>

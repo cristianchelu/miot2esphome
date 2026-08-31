@@ -1,22 +1,9 @@
-import { parseInertiaPage, proxy } from "./utils";
+import { loadGroupedInstances } from "./instances";
 
-/**
- * Summary information about a device not available in the spec itself.
- *
- * More properties are available in this object, but are not yet useful.
- */
 export interface MiotDeviceSummary {
-  /** Device human-friendly name */
-  name: string;
   /** Device model string (`brand.type.model`) */
   model: string;
-  /** Device thumbnail URL */
-  icon_real: string;
-  /** Protocol label from miot-spec.com (e.g. `Wi‑Fi`, `MiIO`) */
-  protocolLabel: string;
-  /** Relative path to the product spec page, when available */
-  specHref?: string;
-  /** MiOT specification revisions (populated on selection) */
+  /** MiOT specification revisions */
   specs: Array<{
     /** Revision version */
     version: number;
@@ -25,48 +12,59 @@ export interface MiotDeviceSummary {
   }>;
 }
 
-interface SearchResultItem {
-  name: string;
-  model: string;
-  icon?: string;
-  protocolLabel?: string;
-  specHref?: string;
-  attrs?: {
-    icon_real?: string;
-  };
+const MAX_RESULTS = 50;
+
+function matchesQuery(model: string, query: string): boolean {
+  const tokens = query
+    .toLowerCase()
+    .split(/[\s._-]+/)
+    .filter(Boolean);
+  if (!tokens.length) {
+    return false;
+  }
+
+  const haystack = model.toLowerCase();
+  return tokens.every((token) => haystack.includes(token));
 }
 
-interface SearchPageProps {
-  results?: {
-    data?: SearchResultItem[];
-  };
-}
-
-function mapSearchResult(item: SearchResultItem): MiotDeviceSummary {
-  return {
-    name: item.name,
-    model: item.model,
-    icon_real: item.icon || item.attrs?.icon_real || "",
-    protocolLabel: item.protocolLabel || "",
-    specHref: item.specHref,
-    specs: [],
-  };
+function relevance(model: string, query: string): number {
+  const q = query.toLowerCase();
+  const m = model.toLowerCase();
+  if (m === q) return 0;
+  if (m.startsWith(q)) return 1;
+  if (m.includes(q)) return 2;
+  return 3;
 }
 
 export default async function searchDevices(
-  name: string
+  queryText: string
 ): Promise<MiotDeviceSummary[]> {
-  const response = await proxy(
-    `https://home.miot-spec.com/s/${encodeURIComponent(name)}`
-  );
-  const html = await response.text();
-  const json = parseInertiaPage(html);
-  const props = json.props as SearchPageProps | undefined;
-  const list = props?.results?.data;
-
-  if (!list) {
-    throw new Error("Could not find list in response");
+  const query = queryText.trim();
+  if (!query) {
+    return [];
   }
 
-  return list.map(mapSearchResult);
+  const catalog = await loadGroupedInstances();
+  const matches: MiotDeviceSummary[] = [];
+
+  for (const [model, revisions] of catalog) {
+    if (!matchesQuery(model, query)) {
+      continue;
+    }
+    matches.push({
+      model,
+      specs: revisions.map((revision) => ({
+        version: revision.version,
+        type: revision.type,
+      })),
+    });
+  }
+
+  matches.sort(
+    (a, b) =>
+      relevance(a.model, query) - relevance(b.model, query) ||
+      a.model.localeCompare(b.model)
+  );
+
+  return matches.slice(0, MAX_RESULTS);
 }
