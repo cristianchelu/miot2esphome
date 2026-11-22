@@ -1,9 +1,24 @@
-import { loadGroupedInstances } from "./instances";
+import { fetchJson } from "./utils";
 
+export const CATALOG_URL = "https://home.miot-spec.com";
+const API_BASE = `${CATALOG_URL}/api`;
+const PER_PAGE = 50;
+
+/**
+ * Summary information about a device not available in the spec itself.
+ */
 export interface MiotDeviceSummary {
+  /** Device human-friendly name */
+  name: string;
   /** Device model string (`brand.type.model`) */
   model: string;
-  /** MiOT specification revisions */
+  /** Device thumbnail URL */
+  image: string;
+  /** Stable protocol slug (e.g. `wifi`, `miio`, `bluetooth`), if known */
+  protocol: string | null;
+  /** English protocol label (e.g. `Wi‑Fi`, `MiIO`), if known */
+  protocolLabel: string | null;
+  /** MiOT specification revisions (latest last) */
   specs: Array<{
     /** Revision version */
     version: number;
@@ -12,59 +27,57 @@ export interface MiotDeviceSummary {
   }>;
 }
 
-const MAX_RESULTS = 50;
-
-function matchesQuery(model: string, query: string): boolean {
-  const tokens = query
-    .toLowerCase()
-    .split(/[\s._-]+/)
-    .filter(Boolean);
-  if (!tokens.length) {
-    return false;
-  }
-
-  const haystack = model.toLowerCase();
-  return tokens.every((token) => haystack.includes(token));
+interface ApiListItem {
+  model: string;
+  name: string | null;
+  image: string | null;
+  protocol: string | null;
+  protocolLabel: string | null;
+  urn: string | null;
+  version: number | null;
 }
 
-function relevance(model: string, query: string): number {
-  const q = query.toLowerCase();
-  const m = model.toLowerCase();
-  if (m === q) return 0;
-  if (m.startsWith(q)) return 1;
-  if (m.includes(q)) return 2;
-  return 3;
+interface ApiListResponse {
+  total: number;
+  results: ApiListItem[];
 }
 
-export default async function searchDevices(
+function mapListItem(item: ApiListItem): MiotDeviceSummary {
+  return {
+    name: item.name || item.model,
+    model: item.model,
+    image: item.image || "",
+    protocol: item.protocol,
+    protocolLabel: item.protocolLabel,
+    specs: item.urn ? [{ version: item.version ?? 1, type: item.urn }] : [],
+  };
+}
+
+/** Per-session cache, so repeated searches don't hit the API again. */
+const cache = new Map<string, Promise<MiotDeviceSummary[]>>();
+
+/**
+ * Search the home.miot-spec.com community catalogue.
+ *
+ * @see https://home.miot-spec.com/api
+ */
+export default function searchDevices(
   queryText: string
 ): Promise<MiotDeviceSummary[]> {
   const query = queryText.trim();
   if (!query) {
-    return [];
+    return Promise.resolve([]);
   }
 
-  const catalog = await loadGroupedInstances();
-  const matches: MiotDeviceSummary[] = [];
-
-  for (const [model, revisions] of catalog) {
-    if (!matchesQuery(model, query)) {
-      continue;
-    }
-    matches.push({
-      model,
-      specs: revisions.map((revision) => ({
-        version: revision.version,
-        type: revision.type,
-      })),
-    });
+  const key = query.toLowerCase();
+  let request = cache.get(key);
+  if (!request) {
+    request = fetchJson<ApiListResponse>(
+      `${API_BASE}/list/${encodeURIComponent(query)}?perPage=${PER_PAGE}`
+    ).then((data) => data.results.map(mapListItem));
+    request.catch(() => cache.delete(key));
+    cache.set(key, request);
   }
 
-  matches.sort(
-    (a, b) =>
-      relevance(a.model, query) - relevance(b.model, query) ||
-      a.model.localeCompare(b.model)
-  );
-
-  return matches.slice(0, MAX_RESULTS);
+  return request;
 }

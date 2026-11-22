@@ -8,16 +8,36 @@
 
   text-align: left;
 
+  img {
+    flex-shrink: 0;
+    height: 5rem;
+    width: 5rem;
+    object-fit: contain;
+    overflow: hidden;
+    font-size: 0;
+  }
+
   a {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
     text-decoration: none;
     color: inherit;
 
     &:focus-visible {
       outline: none;
     }
+  }
+
+  .card-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .card-subtitle {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--padding-quarter);
+    align-items: center;
   }
 
   &.clickable {

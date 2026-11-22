@@ -4,7 +4,10 @@ This utility attempts to generate a plausible ESPHome configuration YAML
 using the [`esphome-miot`](https://github.com/dhewg/esphome-miot) custom
 component, based on the MIoT specification of a device.
 
-All data is fetched by the browser from [miot-spec.org](https://miot-spec.org/)
+All data is fetched by the browser: device search, names and images from the
+[home.miot-spec.com](https://home.miot-spec.com/) community catalogue
+([API](https://home.miot-spec.com/api)), and specifications from
+[miot-spec.org](https://miot-spec.org/).
 
 [Open in GitHub Pages](https://cristianchelu.github.io/miot2esphome/)
 

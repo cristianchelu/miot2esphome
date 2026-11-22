@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
 
 import searchDevices, {
+  CATALOG_URL,
   MiotDeviceSummary,
 } from "../../api/miot-spec/searchDevices";
-import { loadGroupedInstances } from "../../api/miot-spec/instances";
-import getDeviceVersions from "../../api/miot-spec/getDeviceVersions";
 import getSpec, { MiotDevice } from "../../api/miot-spec/getSpec";
 
 import parseSpec from "../../lib/miot/parseSpec";
@@ -32,7 +31,10 @@ const AppFooter = () => (
       <a href="https://github.com/cristianchelu/miot2esphome">GitHub</a>
     </p>
     <p>
-      data from <a href="https://miot-spec.org/">miot-spec.org</a>
+      catalogue from <a href={`${CATALOG_URL}/`}>home.miot-spec.com</a>
+    </p>
+    <p>
+      specs from <a href="https://miot-spec.org/">miot-spec.org</a>
     </p>
   </>
 );
@@ -43,6 +45,7 @@ function App() {
 
   const [devices, setDevices] = useState<MiotDeviceSummary[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedDevice, setSelectedDevice] =
     useState<MiotDeviceSummary | null>(null);
   const [miotDevice, setMiotDevice] = useState<MiotDevice | null>(null);
@@ -53,15 +56,10 @@ function App() {
   const [txPin, setTxPin] = useState<number | null>(null);
   const [browsingModules, setBrowsingModules] = useState(false);
 
-  useEffect(() => {
-    loadGroupedInstances().catch((error) => {
-      console.error(error);
-    });
-  }, []);
-
   async function debugSearchDevice(ev: React.FormEvent) {
     ev.preventDefault();
     setLoading(true);
+    setSearchError(null);
     try {
       const response = await searchDevices(search);
       setDevices(response);
@@ -71,6 +69,7 @@ function App() {
       console.error(error);
       setDevices([]);
       setHasSearched(true);
+      setSearchError(error instanceof Error ? error.message : "Search failed");
     } finally {
       setLoading(false);
     }
@@ -88,13 +87,7 @@ function App() {
     (async function () {
       setMiotDevice(null);
       try {
-        const specs =
-          device.specs.length > 0
-            ? device.specs
-            : await getDeviceVersions(device.model);
-        if (cancelled) return;
-
-        const urn = specs[specs.length - 1]?.type;
+        const urn = device.specs[device.specs.length - 1]?.type;
         if (!urn) {
           throw new Error(`No MiOT URN found for ${device.model}`);
         }
@@ -161,7 +154,7 @@ function App() {
         type="text"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="zhimi.airpurifier.ma4"
+        placeholder="Search device..."
       />
       <Button disabled={isSearchDisabled} className="icon" type="submit">
         {loading ? <LoadingIcon /> : <SearchIcon />}
@@ -210,8 +203,10 @@ function App() {
             </div>
           ) : searchResults.length > 0 ? (
             searchResults
+          ) : searchError && !loading ? (
+            <p>Search failed: {searchError}</p>
           ) : hasSearched && !loading ? (
-            <p>No matching models.</p>
+            <p>No matching devices.</p>
           ) : null}
         </Sidebar.Body>
         {browsingModules ? null : (

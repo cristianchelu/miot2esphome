@@ -23,14 +23,20 @@ function DeviceSummaryCard({ device, onClick }: DeviceSummaryCardProps) {
       className={cn("device-summary", { clickable: isClickable })}
       onClick={_handleClick}
     >
-      <a
-        aria-disabled={!isClickable}
-        tabIndex={isClickable ? 0 : -1}
-        href={isClickable ? `#${device.model}` : undefined}
-        className="card-title"
-      >
-        <code>{device.model}</code>
-      </a>
+      <img src={device.image} alt={device.name} loading="lazy" />
+      <div className="card-content">
+        <a
+          aria-disabled={!isClickable}
+          tabIndex={isClickable ? 0 : -1}
+          href={isClickable ? `#${device.model}` : undefined}
+          className="card-title"
+        >
+          {device.name}
+        </a>
+        <div className="card-subtitle">
+          <code>{device.model}</code>
+        </div>
+      </div>
     </div>
   );
 }

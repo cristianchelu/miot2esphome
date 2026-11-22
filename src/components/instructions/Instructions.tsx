@@ -16,10 +16,11 @@ const Instructions = () => {
       </p>
       <h1>How to use</h1>
       <p>
-        To get started, search for a model string (for example
-        <code>zhimi.airpurifier.ma4</code>) using the search bar on the left;
+        To get started, search for a device by name or model string (for
+        example <code>zhimi.airpurifier.ma4</code>) using the search bar on the
+        left;
       </p>
-      <p>Click a result to view the boilerplate config;</p>
+      <p>Click on a device to view the boilerplate config;</p>
       <p>
         Pick the ESP module that matches what you see on the board, and adjust
         the UART pins if needed;
@@ -34,6 +35,12 @@ const Instructions = () => {
       <p>
         There is no way for this utility to know if a device is using an ESP
         chip, and will happily generate a configuration for any type of device.
+      </p>
+      <p>
+        Device search, names and images are provided by the{" "}
+        <a href="https://home.miot-spec.com/">home.miot-spec.com</a> community
+        catalogue; specifications come from{" "}
+        <a href="https://miot-spec.org/">miot-spec.org</a>.
       </p>
       <p>
         There is no guarantee that the generated configuration will work out of
