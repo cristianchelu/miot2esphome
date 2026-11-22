@@ -1,25 +1,157 @@
 .instructions {
   min-height: 100%;
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: var(--padding) 0;
 
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-
   justify-content: center;
-  align-items: center;
+  gap: 2rem;
 
-  h1 {
-    font-size: 2rem;
+  /* Two text sizes: body copy, and small muted labels */
+  font-size: 1rem;
+  line-height: 1.5;
+
+  header {
     text-align: center;
-    margin-top: 1.5rem;
 
-    &:first-of-type {
-      margin-top: 0;
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.75rem;
+    }
+
+    code {
+      white-space: nowrap;
     }
   }
 
-  p {
-    max-width: 60ch;
-    text-align: center;
+  h2 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin-bottom: 0.75rem;
+  }
+
+  figure {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    figcaption {
+      text-align: center;
+      opacity: 0.75;
+    }
+  }
+
+  .board-diagram {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+
+    text {
+      fill: currentColor;
+      text-anchor: middle;
+    }
+
+    .label {
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .sub {
+      font-size: 15px;
+      fill-opacity: 0.7;
+    }
+
+    .tiny {
+      font-size: 12px;
+      font-family: monospace;
+      letter-spacing: 0.05em;
+      fill-opacity: 0.6;
+    }
+
+    .esp {
+      fill: var(--color-background);
+      stroke: var(--color-accent);
+      stroke-width: 1.5;
+    }
+
+    .part {
+      fill: var(--color-background);
+      stroke: currentColor;
+      stroke-opacity: 0.35;
+    }
+
+    .antenna {
+      fill: none;
+      stroke: var(--color-accent);
+      stroke-width: 2;
+      stroke-linejoin: round;
+    }
+
+    .wire {
+      fill: none;
+      stroke: currentColor;
+      stroke-opacity: 0.5;
+      stroke-width: 1.5;
+    }
+
+    .dot {
+      fill: currentColor;
+      fill-opacity: 0.5;
+    }
+  }
+
+  ol,
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .steps {
+    counter-reset: step;
+
+    li {
+      counter-increment: step;
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      column-gap: 0.6rem;
+
+      &::before {
+        content: counter(step);
+        display: grid;
+        place-items: center;
+        width: 1.6rem;
+        height: 1.6rem;
+        border: 1px solid var(--color-border-input);
+        border-radius: 50%;
+        font-size: 0.8rem;
+        font-variant-numeric: tabular-nums;
+      }
+    }
+  }
+
+  .caveats li {
+    position: relative;
+    padding-left: 2.2rem;
+
+    &::before {
+      content: "";
+      position: absolute;
+      left: 0.55rem;
+      top: 0.75em;
+      width: 0.5rem;
+      height: 1px;
+      background-color: currentColor;
+      opacity: 0.5;
+    }
   }
 }
