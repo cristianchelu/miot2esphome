@@ -14,7 +14,24 @@ import { isUnavailableId } from "../esphome/reservedIds";
 import pipe from "../pipe";
 import idFromType from "./idFromType";
 import { parseUnit } from "./units";
-import { stringify } from "yaml";
+import { Scalar, stringify } from "yaml";
+
+/**
+ * A YAML value with an ESPHome tag, e.g. `!lambda` or `!secret`.
+ *
+ * Multi-line values become `|-` blocks. Tagging `lambda:` values too, though
+ * ESPHome doesn't need it there, lets the dashboard editor highlight them as C++.
+ */
+function tagged(tag: string, value: string) {
+  const scalar = new Scalar(value);
+  scalar.tag = tag;
+  if (value.includes("\n")) {
+    scalar.type = Scalar.BLOCK_LITERAL;
+  }
+  return scalar;
+}
+
+const lambda = (code: string) => tagged("!lambda", code);
 
 export type ParseSpecOptions = {
   module?: EspModule | null;
@@ -348,7 +365,7 @@ function parseAction(
         inputs.map(({ name, type }) => [name, type])
       ),
       then: {
-        lambda: getActionLambda(service.iid, action.iid, inputs),
+        lambda: lambda(getActionLambda(service.iid, action.iid, inputs)),
       },
     };
   }
@@ -430,7 +447,7 @@ function getApiSection(scripts: any[]) {
     },
     then: [
       {
-        lambda: "id(miot_main).queue_command(command);",
+        lambda: lambda("id(miot_main).queue_command(command);"),
       },
     ],
   };
@@ -443,7 +460,7 @@ function getApiSection(scripts: any[]) {
         ...Object.fromEntries(
           Object.keys(script.parameters).map((name) => [
             name,
-            `!lambda return ${name};`,
+            lambda(`return ${name};`),
           ])
         ),
       },
@@ -452,7 +469,7 @@ function getApiSection(scripts: any[]) {
 
   return {
     encryption: {
-      key: "!secret api_key",
+      key: tagged("!secret", "api_key"),
     },
     reboot_timeout: "0s",
     actions: [debugAction, ...scriptActions],
@@ -618,10 +635,6 @@ export default function parseSpec(
     }
   }
 
-  function unquoteLamba(value: string) {
-    return value.replace(/: "(!\w+ .*)"/g, ": $1");
-  }
-
   return pipe(
     (str: string) =>
       stringify(str, {
@@ -629,7 +642,6 @@ export default function parseSpec(
         // ESPHome reads YAML 1.1, where e.g. `On`/`Off` are booleans
         version: "1.1",
       }),
-    CommentKeyGenerator.render,
-    unquoteLamba
+    CommentKeyGenerator.render
   )(output) as string;
 }
