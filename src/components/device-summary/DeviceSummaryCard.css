@@ -42,11 +42,22 @@
     min-width: 0;
   }
 
-  .card-subtitle {
+  /* The model string and the tags row share one text size */
+  .card-model,
+  .card-tags {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  .card-tags {
     display: flex;
     flex-wrap: wrap;
     gap: var(--padding-quarter);
-    align-items: center;
+    margin-top: var(--padding-quarter);
+
+    &:empty {
+      display: none;
+    }
   }
 
   &.clickable {

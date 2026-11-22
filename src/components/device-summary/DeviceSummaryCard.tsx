@@ -41,8 +41,8 @@ function DeviceSummaryCard({ device, onClick }: DeviceSummaryCardProps) {
         >
           {device.name}
         </a>
-        <div className="card-subtitle">
-          <code>{device.model}</code>
+        <code className="card-model">{device.model}</code>
+        <div className="card-tags">
           <ProtocolTag device={device} />
         </div>
       </div>
