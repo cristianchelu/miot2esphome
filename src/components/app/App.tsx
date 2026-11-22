@@ -13,6 +13,7 @@ import Button from "../button/Button";
 import CopyButton from "../copy-button/CopyButton";
 import DeviceSummaryCard from "../device-summary/DeviceSummaryCard";
 import EspModulePicker from "../esp-module-picker/EspModulePicker";
+import GithubBand from "../github-band/GithubBand";
 import Instructions from "../instructions/Instructions";
 import Input from "../input/Input";
 import Sidebar from "../sidebar/Sidebar";
@@ -26,10 +27,6 @@ import "./App.css";
 const AppTitle = () => <h1>MIoT ➠ ESPHome</h1>;
 const AppFooter = () => (
   <>
-    <p>
-      view source on{" "}
-      <a href="https://github.com/cristianchelu/miot2esphome">GitHub</a>
-    </p>
     <p>
       catalogue from <a href={`${CATALOG_URL}/`}>home.miot-spec.com</a>
     </p>
@@ -209,14 +206,14 @@ function App() {
             <p>No matching devices.</p>
           ) : null}
         </Sidebar.Body>
-        {browsingModules ? null : (
-          <Sidebar.Footer>
-            <AppTitle />
-            <AppFooter />
-          </Sidebar.Footer>
-        )}
+        <Sidebar.Footer>
+          {/* the module picker needs the room, but the credits always stay */}
+          {!browsingModules && <AppTitle />}
+          <AppFooter />
+        </Sidebar.Footer>
       </Sidebar>
       <main>{spec ? <YamlView yaml={spec} /> : <Instructions />}</main>
+      <GithubBand />
     </>
   );
 }
