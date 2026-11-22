@@ -6,5 +6,5 @@ import parseUrn from "./parseUrn";
  * @returns ESPHome compatible ID
  */
 export default function idFromType(type: string): string {
-  return parseUrn(type).id.replace(/-/g, "_");
+  return parseUrn(type).id.replace(/[^A-Za-z0-9_]/g, "_");
 }

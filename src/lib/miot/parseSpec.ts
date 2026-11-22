@@ -10,6 +10,7 @@ import { MiotDeviceSummary } from "../../api/miot-spec/searchDevices";
 import { AUTHOR, REPOSITORY } from "../../const";
 import CommentKeyGenerator from "../CommentKeyGenerator";
 import { EspModule } from "../esp/modules";
+import { isUnavailableId } from "../esphome/reservedIds";
 import pipe from "../pipe";
 import idFromType from "./idFromType";
 import { parseUnit } from "./units";
@@ -21,24 +22,170 @@ export type ParseSpecOptions = {
   txPin?: number | null;
 };
 
-function getActionLambda(siid: number, aiid: number, inputs: MiotProperty[]) {
-  const joinStr = inputs.length > 1 ? ",\n    " : ", ";
-  const strings = inputs.map((input) => `${input.iid} %s`).join(" ");
-  const params = inputs.map((input) => idFromType(input.type)).join(joinStr);
-  return `id(miot_main).execute_action("${siid} ${aiid} ${strings}"${joinStr}${params});`;
+/**
+ * Resolves the ESPHome ID of every property, action and event in a spec.
+ *
+ * IDs come from the URN, so they can collide with each other (same type in
+ * two services) or with names ESPHome reserves (e.g. `pause`). Those get the
+ * service name as a prefix, then the instance IDs if that is still not unique.
+ */
+class IdResolver {
+  private ids = new Map<string, string>();
+
+  constructor(spec: MiotDevice) {
+    const candidates: [key: string, service: MiotService, base: string][] = [];
+    for (const service of spec.services) {
+      for (const p of service.properties ?? []) {
+        candidates.push([
+          `p${service.iid}.${p.iid}`,
+          service,
+          idFromType(p.type),
+        ]);
+      }
+      for (const a of service.actions ?? []) {
+        candidates.push([
+          `a${service.iid}.${a.iid}`,
+          service,
+          idFromType(a.type),
+        ]);
+      }
+      for (const e of service.events ?? []) {
+        candidates.push([
+          `e${service.iid}.${e.iid}`,
+          service,
+          `${idFromType(e.type)}_event`,
+        ]);
+      }
+    }
+
+    const counts = new Map<string, number>();
+    for (const [, , base] of candidates) {
+      counts.set(base, (counts.get(base) ?? 0) + 1);
+    }
+
+    const used = new Set<string>();
+    const isFree = (id: string) =>
+      !!id && !/^[0-9]/.test(id) && !isUnavailableId(id) && !used.has(id);
+
+    for (const [key, service, base] of candidates) {
+      const prefixed = `${idFromType(service.type)}_${base}`;
+      const options = [
+        counts.get(base) === 1 ? base : null,
+        prefixed,
+        `${prefixed}_${key.slice(1).replace(".", "_")}`,
+        `${key[0]}${key.slice(1).replace(".", "_")}_${base}`,
+      ];
+      const id = options.find((option) => option !== null && isFree(option))!;
+      used.add(id);
+      this.ids.set(key, id);
+    }
+  }
+
+  property(service: MiotService, property: MiotProperty) {
+    return this.ids.get(`p${service.iid}.${property.iid}`)!;
+  }
+
+  action(service: MiotService, action: MiotAction) {
+    return this.ids.get(`a${service.iid}.${action.iid}`)!;
+  }
+
+  event(service: MiotService, event: MiotEvent) {
+    return this.ids.get(`e${service.iid}.${event.iid}`)!;
+  }
+}
+
+/**
+ * Turns spec descriptions that are just the URN slug (`recipe-id`)
+ * into readable names (`Recipe Id`). Other descriptions are only trimmed.
+ */
+function humanize(description: string | undefined, type: string) {
+  const text = (description ?? "").trim() || idFromType(type);
+  if (/[A-Z\s]/.test(text)) {
+    return text;
+  }
+  return text
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+const INTEGER_FORMATS = ["int8", "int16", "int32", "uint8", "uint16", "uint32"];
+
+/** ESPHome script/API parameter type for a MIoT property format. */
+function getParameterType(property: MiotProperty) {
+  if (property.format === "bool") return "bool";
+  if (property.format === "float") return "float";
+  if (property.format === "string") return "string";
+  if (INTEGER_FORMATS.includes(property.format)) return "int";
+  return "string";
+}
+
+/** Action arguments beyond this are split one per row. */
+const MAX_INLINE_ARGS = 2;
+
+/**
+ * Builds the lambda for an action with inputs.
+ *
+ * Arguments are `piid value` pairs. Per the MIoT serial protocol, string
+ * values are sent in double quotes, numbers and booleans as-is.
+ */
+function getActionLambda(
+  siid: number,
+  aiid: number,
+  inputs: { property: MiotProperty; name: string }[]
+) {
+  const formats: string[] = [];
+  const args: string[] = [];
+  for (const { property, name } of inputs) {
+    switch (getParameterType(property)) {
+      case "int":
+        formats.push(`${property.iid} %d`);
+        args.push(name);
+        break;
+      case "float":
+        formats.push(`${property.iid} %f`);
+        args.push(name);
+        break;
+      case "bool":
+        formats.push(`${property.iid} %s`);
+        args.push(`${name} ? "true" : "false"`);
+        break;
+      default:
+        formats.push(`${property.iid} \\"%s\\"`);
+        args.push(`${name}.c_str()`);
+    }
+  }
+
+  // Up to MAX_INLINE_ARGS arguments stay on one line, more get one per row,
+  // aligned with the format string.
+  const open = "auto args = str_sprintf(";
+  const separator =
+    args.length > MAX_INLINE_ARGS ? `,\n${" ".repeat(open.length)}` : ", ";
+  const format = `"${formats.join(" ")}"`;
+  return [
+    `${open}${[format, ...args].join(separator)});`,
+    `id(miot_main).execute_action(${siid}, ${aiid}, args);`,
+  ].join("\n");
 }
 
 function parseProperty(
   service: MiotService,
   property: MiotProperty,
-  comment: CommentKeyGenerator
+  comment: CommentKeyGenerator,
+  ids: IdResolver
 ) {
   const {
     access,
     "value-range": valueRange,
-    "value-list": valueList,
+    "value-list": rawValueList,
     format,
   } = property;
+
+  const valueList = rawValueList?.map((v) => ({
+    ...v,
+    description: v.description.trim(),
+  }));
 
   const isWriteable = access.includes("write");
   const isReadable = access.includes("read");
@@ -65,8 +212,8 @@ function parseProperty(
   const component: Record<string, any> = {};
 
   component.platform = "miot";
-  component.id = idFromType(property.type);
-  component.name = property.description;
+  component.id = ids.property(service, property);
+  component.name = humanize(property.description, property.type);
   component.miot_siid = service.iid;
   component.miot_piid = property.iid;
 
@@ -79,6 +226,8 @@ function parseProperty(
       }),
       {}
     );
+  } else if (isReadable && format === "string") {
+    component["$domain"] = "text_sensor";
   } else if (format === "bool" || isFakeBoolean) {
     if (isFakeBoolean) {
       component.miot_true = 1;
@@ -98,13 +247,13 @@ function parseProperty(
     } else {
       component["$domain"] = "sensor";
     }
+  } else if (isReadable && hasValueList) {
+    component["$domain"] = "text_sensor";
+    component.filters = [
+      { map: valueList.map((v) => `${v.value} -> ${v.description}`) },
+    ];
   } else if (isReadable) {
     component["$domain"] = "sensor";
-    if (hasValueList) {
-      component.filter = {
-        map: valueList.map((v) => `${v.value} -> ${v.description}`),
-      };
-    }
   } else {
     if (!isActionInput) {
       console.error(`Unsupported property: ${property.description}`, property);
@@ -116,7 +265,7 @@ function parseProperty(
     component.miot_poll = false;
     const actionList = service
       .actions!.filter((action) => action.out.includes(property.iid))
-      .map((action) => idFromType(action.type))
+      .map((action) => ids.action(service, action))
       .join(", ");
     component[comment.above] = `# action output for ${actionList}`;
   }
@@ -125,17 +274,19 @@ function parseProperty(
     component.miot_poll = false;
     const eventList = service
       .events!.filter((event) => event.arguments.includes(property.iid))
-      .map((event) => idFromType(event.type))
+      .map((event) => ids.event(service, event))
       .join(", ");
     component[comment.above] = `# event output for ${eventList}`;
   }
 
-  const [unit, deviceClass] = parseUnit(property.unit);
-  if (unit) {
-    component.unit_of_measurement = unit;
-  }
-  if (deviceClass) {
-    component.device_class = deviceClass;
+  if (component["$domain"] === "sensor" || component["$domain"] === "number") {
+    const [unit, deviceClass] = parseUnit(property.unit);
+    if (unit) {
+      component.unit_of_measurement = unit;
+    }
+    if (deviceClass) {
+      component.device_class = deviceClass;
+    }
   }
 
   return component;
@@ -144,27 +295,27 @@ function parseProperty(
 function parseEvent(
   service: MiotService,
   event: MiotEvent,
-  comment: CommentKeyGenerator
+  comment: CommentKeyGenerator,
+  ids: IdResolver
 ) {
   const outputs =
     service.properties?.filter((property) =>
       event.arguments.includes(property.iid)
     ) ?? [];
 
-  const id = idFromType(event.type);
   const component: Record<string, unknown> = {
     ["$domain"]: "event",
     platform: "miot",
-    id: `${id}_event`,
-    name: event.description,
-    event_type: id,
+    id: ids.event(service, event),
+    name: humanize(event.description, event.type),
+    event_type: idFromType(event.type),
     miot_siid: service.iid,
     miot_eiid: event.iid,
   };
 
   if (outputs.length) {
     component[comment.above] =
-      `# outputs: ${outputs.map((property) => idFromType(property.type)).join(", ")}`;
+      `# outputs: ${outputs.map((property) => ids.property(service, property)).join(", ")}`;
   }
 
   return component;
@@ -173,21 +324,29 @@ function parseEvent(
 function parseAction(
   service: MiotService,
   action: MiotAction,
-  comment: CommentKeyGenerator
+  comment: CommentKeyGenerator,
+  ids: IdResolver
 ) {
   const hasInputs = action.in.length > 0;
   if (hasInputs) {
-    const inputs =
-      service.properties?.filter((property) =>
-        action.in.includes(property.iid)
-      ) ?? [];
+    const properties = new Map(
+      (service.properties ?? []).map((property) => [property.iid, property])
+    );
+    // Keep the order of `in`, which is the order the device expects.
+    const inputs = action.in
+      .map((iid) => properties.get(iid))
+      .filter((property) => property !== undefined)
+      .map((property) => ({
+        property,
+        name: ids.property(service, property),
+        type: getParameterType(property),
+      }));
     return {
       ["$domain"]: "script",
-      id: idFromType(action.type),
-      parameters: inputs.map((input) => ({
-        name: idFromType(input.type),
-        type: "string",
-      })),
+      id: ids.action(service, action),
+      parameters: Object.fromEntries(
+        inputs.map(({ name, type }) => [name, type])
+      ),
       then: {
         lambda: getActionLambda(service.iid, action.iid, inputs),
       },
@@ -197,8 +356,8 @@ function parseAction(
   const component: Record<string, unknown> = {
     ["$domain"]: "button",
     platform: "miot",
-    id: idFromType(action.type),
-    name: action.description,
+    id: ids.action(service, action),
+    name: humanize(action.description, action.type),
     miot_siid: service.iid,
     miot_aiid: action.iid,
   };
@@ -212,7 +371,7 @@ function parseAction(
 
     if (outputs.length) {
       component[comment.above] =
-        `# outputs: ${outputs.map((property) => property.description).join(", ")}`;
+        `# outputs: ${outputs.map((property) => humanize(property.description, property.type)).join(", ")}`;
     }
   }
 
@@ -277,20 +436,14 @@ function getApiSection(scripts: any[]) {
   };
   const scriptActions = scripts.map((script) => ({
     action: script.id,
-    variables: script.parameters.reduce(
-      (acc, param) => ({
-        ...acc,
-        [param.name]: "string",
-      }),
-      {}
-    ),
+    variables: { ...script.parameters },
     then: {
       "script.execute": {
         id: script.id,
         ...Object.fromEntries(
-          script.parameters.map((param) => [
-            param.name,
-            `!lambda return ${param.name};`,
+          Object.keys(script.parameters).map((name) => [
+            name,
+            `!lambda return ${name};`,
           ])
         ),
       },
@@ -306,6 +459,49 @@ function getApiSection(scripts: any[]) {
   };
 }
 
+/** ESPHome's limit for entity names. */
+const MAX_NAME_BYTES = 120;
+
+function truncateName(name: string, maxBytes = MAX_NAME_BYTES) {
+  const encoder = new TextEncoder();
+  let result = name;
+  while (encoder.encode(result).length > maxBytes) {
+    result = result.slice(0, -1);
+  }
+  return result.trimEnd();
+}
+
+/**
+ * ESPHome needs entity names to be unique within a platform, compared by
+ * their object ID (lowercase, punctuation collapsed). Multi-service devices
+ * repeat names (a 3-gang switch has three "Switch Status"), so those get the
+ * service name as a prefix, then the instance IDs if that is still not unique.
+ */
+function dedupeNames(components: Record<string, any>[]) {
+  const key = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+  const duplicates = () => {
+    const counts = new Map<string, number>();
+    for (const c of components) {
+      counts.set(key(c.name), (counts.get(key(c.name)) ?? 0) + 1);
+    }
+    return components.filter((c) => counts.get(key(c.name))! > 1);
+  };
+
+  for (const c of duplicates()) {
+    if (!key(c.name).startsWith(key(c.$service))) {
+      c.name = `${c.$service} ${c.name}`;
+    }
+  }
+  for (const c of components) {
+    c.name = truncateName(c.name);
+  }
+  for (const c of duplicates()) {
+    const iid = c.miot_piid ?? c.miot_aiid ?? c.miot_eiid;
+    const suffix = ` ${c.miot_siid}.${iid}`;
+    c.name = truncateName(c.name, MAX_NAME_BYTES - suffix.length) + suffix;
+  }
+}
+
 function cleanObject(obj: object) {
   return Object.fromEntries(
     Object.entries(obj).filter(([key]) => key.indexOf("$") !== 0)
@@ -318,6 +514,7 @@ export default function parseSpec(
   options: ParseSpecOptions = {}
 ): string {
   const commentGenerator = new CommentKeyGenerator();
+  const ids = new IdResolver(spec);
   const comment = commentGenerator as unknown as string & {
     above: string;
   };
@@ -328,17 +525,21 @@ export default function parseSpec(
 
   const properties = spec.services
     .map((service) => {
+      const serviceName = humanize(service.description, service.type);
       return [
         ...(service.properties?.map((property) =>
-          parseProperty(service, property, commentGenerator)
+          parseProperty(service, property, commentGenerator, ids)
         ) ?? []),
         ...(service.actions?.map((action) =>
-          parseAction(service, action, commentGenerator)
+          parseAction(service, action, commentGenerator, ids)
         ) ?? []),
         ...(service.events?.map((event) =>
-          parseEvent(service, event, commentGenerator)
+          parseEvent(service, event, commentGenerator, ids)
         ) ?? []),
-      ];
+      ].map(
+        (component): Record<string, any> | null =>
+          component && { ...component, $service: serviceName }
+      );
     })
     .flat()
     .filter(Boolean);
@@ -347,6 +548,14 @@ export default function parseSpec(
     properties,
     (property) => property?.["$domain"]
   );
+
+  for (const components of Object.values(componentsByDomain)) {
+    dedupeNames(
+      (components ?? []).filter(
+        (c): c is Record<string, any> => c?.name !== undefined
+      )
+    );
+  }
 
   const uartSection =
     rxPin != null && txPin != null
@@ -414,7 +623,12 @@ export default function parseSpec(
   }
 
   return pipe(
-    (str: string) => stringify(str, { lineWidth: 0 }),
+    (str: string) =>
+      stringify(str, {
+        lineWidth: 0,
+        // ESPHome reads YAML 1.1, where e.g. `On`/`Off` are booleans
+        version: "1.1",
+      }),
     CommentKeyGenerator.render,
     unquoteLamba
   )(output) as string;
