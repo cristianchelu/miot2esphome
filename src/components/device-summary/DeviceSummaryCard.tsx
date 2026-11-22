@@ -2,6 +2,8 @@ import { MouseEvent } from "react";
 import cn from "classnames";
 
 import { MiotDeviceSummary } from "../../api/miot-spec/searchDevices";
+import { getUnsupportedReason } from "../../lib/miot/isDeviceSupported";
+import ProtocolTag from "../protocol-tag/ProtocolTag";
 
 import "./DeviceSummaryCard.css";
 
@@ -11,7 +13,9 @@ interface DeviceSummaryCardProps {
 }
 
 function DeviceSummaryCard({ device, onClick }: DeviceSummaryCardProps) {
-  const isClickable = !!onClick;
+  const unsupportedReason = onClick ? getUnsupportedReason(device) : null;
+  const isUnsupported = unsupportedReason !== null;
+  const isClickable = !isUnsupported && !!onClick;
 
   function _handleClick(event: MouseEvent) {
     event.preventDefault();
@@ -20,7 +24,11 @@ function DeviceSummaryCard({ device, onClick }: DeviceSummaryCardProps) {
 
   return (
     <div
-      className={cn("device-summary", { clickable: isClickable })}
+      className={cn("device-summary", {
+        unsupported: isUnsupported,
+        clickable: isClickable,
+      })}
+      title={unsupportedReason ?? undefined}
       onClick={_handleClick}
     >
       <img src={device.image} alt={device.name} loading="lazy" />
@@ -35,6 +43,7 @@ function DeviceSummaryCard({ device, onClick }: DeviceSummaryCardProps) {
         </a>
         <div className="card-subtitle">
           <code>{device.model}</code>
+          <ProtocolTag device={device} />
         </div>
       </div>
     </div>

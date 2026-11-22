@@ -33,8 +33,10 @@ const Instructions = () => {
         and a separate chip handling the actual hardware.
       </p>
       <p>
-        There is no way for this utility to know if a device is using an ESP
-        chip, and will happily generate a configuration for any type of device.
+        Bluetooth-only, gateway sub-devices and virtual devices are greyed out
+        in the search results. Beyond that, there is no way for this utility to
+        know if a device is using an ESP chip, and will happily generate a
+        configuration for any other type of device.
       </p>
       <p>
         Device search, names and images are provided by the{" "}

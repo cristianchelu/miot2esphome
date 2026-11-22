@@ -17,8 +17,10 @@ All data is fetched by the browser: device search, names and images from the
   One ESP32/ESP8266 Chip handling WiFi (this configuration) and a separate
   chip handling the actual hardware.
 
-- There is no way for this utility to know if a device is using an ESP chip,
-  and will happily generate a configuration for any type of device.
+- Bluetooth-only, gateway sub-devices and virtual devices are greyed out in the
+  search results. Beyond that, there is no way for this utility to know if a
+  device is using an ESP chip, and will happily generate a configuration for
+  any other type of device.
 
 - There is no guarantee that the generated configuration will work out of the
   box, if the specification is incomplete or incorrect.

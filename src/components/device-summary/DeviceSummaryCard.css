@@ -26,6 +26,15 @@
     }
   }
 
+  &.unsupported {
+    cursor: not-allowed;
+    opacity: 0.2;
+
+    @media (prefers-color-scheme: light) {
+      opacity: 0.4;
+    }
+  }
+
   .card-content {
     display: flex;
     flex-direction: column;
